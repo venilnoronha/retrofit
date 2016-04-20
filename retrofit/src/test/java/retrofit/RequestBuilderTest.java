@@ -1,4 +1,4 @@
-// Copyright 2013 Square, Inc.
+// Copyright 2013-2016 Square, Inc.
 package retrofit;
 
 import com.squareup.okhttp.Interceptor;
@@ -29,6 +29,7 @@ import retrofit.http.GET;
 import retrofit.http.HEAD;
 import retrofit.http.HTTP;
 import retrofit.http.Header;
+import retrofit.http.HeaderMap;
 import retrofit.http.Headers;
 import retrofit.http.Multipart;
 import retrofit.http.PATCH;
@@ -440,6 +441,22 @@ public final class RequestBuilderTest {
     }
   }
 
+  @Test public void headerMapMustBeAMap() {
+    class Example {
+      @GET("/")
+      Call<ResponseBody> method(@HeaderMap List<String> a) {
+        return null;
+      }
+    }
+    try {
+      buildRequest(Example.class);
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertThat(e).hasMessage(
+      "@HeaderMap parameter type must be Map. (parameter #1)\n    for method Example.method");
+    }
+  }
+
   @Test public void queryMapRejectsNullKeys() {
     class Example {
       @GET("/") //
@@ -457,6 +474,26 @@ public final class RequestBuilderTest {
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e).hasMessage("Query map contained null key.");
+    }
+  }
+
+  @Test public void headerMapRejectsNullKeys() {
+    class Example {
+      @GET("/")
+      Call<ResponseBody> method(@HeaderMap Map<String, String> a) {
+        return null;
+      }
+    }
+
+    Map<String, String> headers = new LinkedHashMap<>();
+    headers.put("Accept", "text/plain");
+    headers.put(null, "utf8");
+
+    try {
+      buildRequest(Example.class, headers);
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertThat(e).hasMessage("Header map contained null key.");
     }
   }
 
@@ -894,6 +931,30 @@ public final class RequestBuilderTest {
     assertThat(request.method()).isEqualTo("GET");
     assertThat(request.headers().size()).isZero();
     assertThat(request.urlString()).isEqualTo("http://example.com/foo/bar/?kit=k%20t&pi%20ng=p%20g");
+    assertThat(request.body()).isNull();
+  }
+
+  @Test public void getWithHeaderMap() {
+    class Example {
+      @GET("/search")
+      Call<ResponseBody> method(@HeaderMap Map<String, Object> headers) {
+        return null;
+      }
+    }
+
+    Map<String, Object> headers = new LinkedHashMap<>();
+    headers.put("Accept", Arrays.asList("text/plain", null));
+    headers.put("Accept-Charset", "utf-8");
+    headers.put("Accept-Encoding", Arrays.asList("gzip", "deflate"));
+    headers.put("Connection", null);
+
+    Request request = buildRequest(Example.class, headers);
+    assertThat(request.method()).isEqualTo("GET");
+    assertThat(request.headers().size()).isEqualTo(4);
+    assertThat(request.header("Accept")).isEqualTo("text/plain");
+    assertThat(request.header("Accept-Charset")).isEqualTo("utf-8");
+    assertThat(request.headers("Accept-Encoding")).contains("gzip", "deflate");
+    assertThat(request.urlString()).isEqualTo("http://example.com/search");
     assertThat(request.body()).isNull();
   }
 

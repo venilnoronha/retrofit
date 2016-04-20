@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Square, Inc.
+ * Copyright (C) 2015-2016 Square, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,22 +42,42 @@ abstract class RequestBuilderAction {
 
     @Override void perform(RequestBuilder builder, Object value) {
       if (value == null) return; // Skip null values.
+      addHeader(builder, name, value);
+    }
+  }
 
-      if (value instanceof Iterable) {
-        for (Object iterableValue : (Iterable<?>) value) {
-          if (iterableValue != null) { // Skip null values.
-            builder.addHeader(name, iterableValue.toString());
-          }
+  private static void addHeader(RequestBuilder builder, String name, Object value) {
+    if (value instanceof Iterable) {
+      for (Object iterableValue : (Iterable<?>) value) {
+        if (iterableValue != null) { // Skip null values.
+          builder.addHeader(name, iterableValue.toString());
         }
-      } else if (value.getClass().isArray()) {
-        for (int x = 0, arrayLength = Array.getLength(value); x < arrayLength; x++) {
-          Object arrayValue = Array.get(value, x);
-          if (arrayValue != null) { // Skip null values.
-            builder.addHeader(name, arrayValue.toString());
-          }
+      }
+    } else if (value.getClass().isArray()) {
+      for (int x = 0, arrayLength = Array.getLength(value); x < arrayLength; x++) {
+        Object arrayValue = Array.get(value, x);
+        if (arrayValue != null) { // Skip null values.
+          builder.addHeader(name, arrayValue.toString());
         }
-      } else {
-        builder.addHeader(name, value.toString());
+      }
+    } else {
+      builder.addHeader(name, value.toString());
+    }
+  }
+
+  static final class HeaderMap extends RequestBuilderAction {
+    @Override void perform(RequestBuilder builder, Object value) {
+      if (value == null) return; // Skip null values.
+      Map<?, ?> map = (Map<?, ?>) value;
+      for (Map.Entry<?, ?> entry : map.entrySet()) {
+        Object entryKey = entry.getKey();
+        if (entryKey == null) {
+          throw new IllegalArgumentException("Header map contained null key.");
+        }
+        Object entryValue = entry.getValue();
+        if (entryValue != null) { // Skip null values.
+          addHeader(builder, entryKey.toString(), entryValue);
+        }
       }
     }
   }

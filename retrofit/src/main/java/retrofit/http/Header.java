@@ -23,7 +23,7 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Replaces the header with the the value of its target.
+ * Replaces the header with the value of its target.
  * <p>
  * <pre>
  * &#64;GET("/")
@@ -37,6 +37,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * be included in the request.
  *
  * @author Adrian Cole (adrianc@netflix.com)
+ * @see Headers
+ * @see HeaderMap
  */
 @Documented
 @Retention(RUNTIME)

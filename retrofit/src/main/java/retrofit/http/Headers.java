@@ -42,6 +42,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * be included in the request.
  *
  * @author Adrian Cole (adrianc@netflix.com)
+ * @see Header
+ * @see HeaderMap
  */
 @Documented
 @Target(METHOD)
